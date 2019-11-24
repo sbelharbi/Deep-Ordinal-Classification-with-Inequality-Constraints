@@ -1,4 +1,6 @@
-# Pytorch code for: `Deep Ordinal Classification with Inequality Constraints`
+**Please report any issues through the issue tool of Github and not through email.**
+
+### Pytorch code for: `Deep Ordinal Classification with Inequality Constraints`
 
 * **arXiv**: [https://arxiv.org/abs/XXXX](https://arxiv.org/abs/XXXX)
 
@@ -12,8 +14,6 @@
   year={2019}
 }
 ```
-
-**Please report any issues through the issue tool of Github and not through email.**
 
 ### Content:
 * [Requirements](#requirements)
