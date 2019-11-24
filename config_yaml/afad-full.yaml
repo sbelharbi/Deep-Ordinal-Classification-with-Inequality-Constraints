@@ -1,0 +1,38 @@
+MYSEED: 0
+batch_size: 8
+crop_size: !!python/tuple [512, 512]
+dataset: afad-full
+eps: 0.1
+epsp: 0.1
+extension: !!python/tuple [jpeg, JPEG]
+floating: 3
+fold: 0
+fold_folder: ./folds
+height_tag: 50
+init_t: 1.0
+lamb: 1.0e-05
+loss: LossCE
+max_epochs: 400
+max_t: 10.0
+model: {alpha: 0.0, dropout: 0.0, kmax: 0.1, kmin: 0.1, modalities: 5, name: resnet18,
+  pretrained: true}
+mulcoef: 1.01
+name_classes: encoding.yaml
+num_classes: 58
+num_workers: 8
+optimizer:
+  dampening: 0.0
+  lr: 0.001
+  lr_scheduler: {gamma: 0.1, last_epoch: -1, min_lr: 1.0e-07, name: mystep, step_size: 40}
+  momentum: 0.9
+  name: sgd
+  nesterov: true
+  weight_decay: 1.0e-05
+pad_eval: false
+padding_mode: reflect
+padding_size: null
+preload: true
+ratio_scale_patch: 0.5
+resize: null
+split: 0
+up_scale_small_dim_to: 532

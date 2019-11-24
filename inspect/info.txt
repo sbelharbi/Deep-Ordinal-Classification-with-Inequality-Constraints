@@ -1,0 +1,4 @@
+Min h: 120 
+Max h: 500 
+Min w: 121 
+Max w: 500 
