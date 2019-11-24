@@ -1,4 +1,4 @@
-**Please report any issues through the issue tool of Github and not through email.**
+**Please report any issue through the issue tool of Github and not through email.**
 
 ### Pytorch code for: `Deep Ordinal Classification with Inequality Constraints`
 
