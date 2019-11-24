@@ -13,6 +13,8 @@
 }
 ```
 
+**Please report any issues through the issue tool of Github and not through email.**
+
 ### Content:
 * [Requirements](#requirements)
 * [How to run the code](#runCode)
