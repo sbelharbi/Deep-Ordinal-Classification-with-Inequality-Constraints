@@ -16,8 +16,8 @@
 ```
 
 ### Content:
-* [Demo](#prediction-test-samples-more-results-with-high-resolution-are-in-demom)
 * [Method overview](#methodOverview)
+* [Demo](#prediction-test-samples-more-results-with-high-resolution-are-in-demom)
 * [Requirements](#requirements)
 * [How to run the code](#runCode)
 * [Reproducibility](#reproducibility)
