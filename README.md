@@ -2,7 +2,7 @@
 
 ### Pytorch code for: `Deep Ordinal Classification with Inequality Constraints`
 
-* **arXiv**: [https://arxiv.org/abs/XXXX](https://arxiv.org/abs/XXXX)
+* **arXiv**: [https://arxiv.org/abs/1911.10720](https://arxiv.org/abs/1911.10720)
 
 * **If you use this code, please cite our work**:
 ```
@@ -10,12 +10,14 @@
   title={Deep Ordinal Classification with Inequality Constraints},
   author={Belharbi, S. and Ben Ayed, I. and McCaffrey, L. and Granger, E.},
   journal={coRR},
-  volume={abs/XXXXX},
+  volume={abs/1911.10720},
   year={2019}
 }
 ```
 
 ### Content:
+* [Demo](#prediction-test-samples-more-results-with-high-resolution-are-in-demom)
+* [Method overview](#methodOverview)
 * [Requirements](#requirements)
 * [How to run the code](#runCode)
 * [Reproducibility](#reproducibility)
@@ -23,10 +25,16 @@
 * [Synchronized-Batch-Norm support (MultiGPUs)](#synchBNSupportMultigpu)
 
 
+# <a name="methodOverview"></a> Method overview:
+## Posterior probability consistency in ordinal classification:
+![intuition](doc/pb.png)
+
+# Prediction over FGNET dataset with 70 classes (test samples. More results are in [./demo.md](./demo.md)):
+![example](doc/example.png)
 
 
 ## Download datasets:
-You find the splits in [./folds](./folds). Untar first.
+See [./cmds](./cmds) on how to download the datasets. You find the splits in [./folds](./folds). Untar first.
 The code that generated the splits is [./create_folds.py](./create_folds.py).
 
 
