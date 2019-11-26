@@ -17,7 +17,7 @@
 
 ### Content:
 * [Method overview](#methodOverview)
-* [Demo](#prediction-test-samples-more-results-with-high-resolution-are-in-demom)
+* [Demo](#demo)
 * [Requirements](#requirements)
 * [How to run the code](#runCode)
 * [Reproducibility](#reproducibility)
@@ -29,7 +29,7 @@
 ## Posterior probability consistency in ordinal classification:
 ![intuition](doc/pb.png)
 
-# Prediction over FGNET dataset with 70 classes (test samples. More results over other datasets are in [./demo.md](./demo.md)):
+# <a name="demo"></a> Prediction over FGNET dataset with 70 classes (test samples. More results over other datasets are in [./demo.md](./demo.md)):
 ![example](doc/example.png)
 
 
