@@ -29,7 +29,7 @@
 ## Posterior probability consistency in ordinal classification:
 ![intuition](doc/pb.png)
 
-# Prediction over FGNET dataset with 70 classes (test samples. More results are in [./demo.md](./demo.md)):
+# Prediction over FGNET dataset with 70 classes (test samples. More results over other datasets are in [./demo.md](./demo.md)):
 ![example](doc/example.png)
 
 
