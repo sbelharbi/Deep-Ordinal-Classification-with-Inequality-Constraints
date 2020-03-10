@@ -18,6 +18,7 @@
 ### Content:
 * [Method overview](#methodOverview)
 * [Demo](#demo)
+* [Results](#results)
 * [Requirements](#requirements)
 * [How to run the code](#runCode)
 * [Reproducibility](#reproducibility)
@@ -31,6 +32,11 @@
 
 # <a name="demo"></a> Prediction over FGNET dataset with 70 classes (test samples. More results over other datasets are in [./demo.md](./demo.md)):
 ![example](doc/example.png)
+
+# <a name="results"></a> Experimental results:
+![example](doc/results.png)
+
+![example](doc/curves.png)
 
 
 ## Download datasets:
