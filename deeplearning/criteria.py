@@ -3,8 +3,11 @@
 """criteria.py
 Implements different learning losses and metrics.
 """
+import os
+
 import numpy as np
 from scipy.stats import norm
+import matplotlib.pyplot as plt
 
 import torch
 import torch.nn as nn
@@ -213,7 +216,7 @@ class _Penalty(nn.Module):
         # penalise values that are >= 0.
         positive = ((diff_matrix > 0) | (diff_matrix == 0)).float()
 
-        mtx_loss = positive * torch.pow(positive * diff_matrix - self.eps, 2)
+        mtx_loss = positive * torch.pow(positive * diff_matrix + self.eps, 2)
         loss = mtx_loss.sum(dim=1).mean()
         return self.lamb * loss
 
@@ -615,19 +618,22 @@ class LossELB(_Loss):
     """
     Public extended-log-barrier based method (ELB).
     """
-    def __init__(self, init_t=1., max_t=10., mulcoef=1.01):
+    def __init__(self, init_t=1., max_t=10., mulcoef=1.01, weight_ce=False):
         """
         Init. function
         :param init_t: float > 0. The initial value of `t`.
         :param max_t: float > 0. The maximum allowed value of `t`.
         :param mulcoef: float > 0.. The coefficient used to update `t` in the
         form: t = t * mulcoef.
+        :param weight_ce: if True, the cross-entropy loss is weighted by t.
         """
         super(LossELB, self).__init__()
 
         self.lossCE = _CE()  # cross-entropy loss
         self.lossCT = _ExtendedLB(
             init_t=init_t, max_t=max_t, mulcoef=mulcoef)  # constraints loss
+
+        self.weight_ce = weight_ce
 
     def __str__(self):
         return "{}(): extended-log-barrier-based method".format(
@@ -641,12 +647,27 @@ class LossELB(_Loss):
         """
         return "Extended log-barrier loss (ELB)"
 
+    def forward(self, scores, labels):
+        """
+        Forward function.
+        """
+        if not self.weight_ce:
+            return super(LossELB, self).forward(scores=scores, labels=labels)
+        else:
+            assert scores.shape[1] > 1, "Number of classes must be > 1 " \
+                                        "....[NOT OK]"
+
+            return self.lossCT.t_lb * self.lossCE(
+                scores=scores, labels=labels) + self.lossCT(
+                scores=scores, labels=labels)
+
 
 class LossRLB(_Loss):
     """
     Public rectified-log-barrier based method (ELB).
     """
-    def __init__(self, init_t=1., max_t=10., mulcoef=1.1, epsp=1e-1):
+    def __init__(self, init_t=1., max_t=10., mulcoef=1.1, epsp=1e-1,
+                 weight_ce=False):
         """
         Init. function
 
@@ -656,6 +677,7 @@ class LossRLB(_Loss):
         form: t = t * mulcoef.
         :param epsp: float > 0. Float constant used to avoid rescaling the
         minimum negative value to -1.
+        :param weight_ce: if True, the cross-entropy loss is weighted by t.
         """
         super(LossRLB, self).__init__()
 
@@ -663,6 +685,8 @@ class LossRLB(_Loss):
         self.lossCT = _RectifiedLB(
             init_t=init_t, max_t=max_t, mulcoef=mulcoef, epsp=epsp)
         # constraints loss
+
+        self.weight_ce = weight_ce
 
     def __str__(self):
         return "{}(): rectified-log-barrier-based method".format(
@@ -675,6 +699,20 @@ class LossRLB(_Loss):
         :return: str, name of the loss.
         """
         return "Rectified log-barrier loss (RLB)"
+
+    def forward(self, scores, labels):
+        """
+        Forward function.
+        """
+        if not self.weight_ce:
+            return super(LossRLB, self).forward(scores=scores, labels=labels)
+        else:
+            assert scores.shape[1] > 1, "Number of classes must be > 1 " \
+                                        "....[NOT OK]"
+
+            return self.lossCT.t_lb * self.lossCE(
+                scores=scores, labels=labels) + self.lossCT(
+                scores=scores, labels=labels)
 
 
 class LossREN(_Loss):
@@ -1001,7 +1039,7 @@ class LossPO(_Loss):
         :param scores:
         :return:
         """
-        raise NotImplementedError("We found it is suitable to implement this"
+        raise NotImplementedError("We found it suitable to implement this"
                                   "within the model. Do not call this "
                                   "function. Nothing to do here."
                                   "See deeplearning.models.PoissonHead().")
@@ -1363,14 +1401,23 @@ def test_LossLD():
     if torch.cuda.is_available():
         torch.cuda.set_device(int(cuda))
     loss.to(DEVICE)
-    num_classes = 5
-    b = 1
+    num_classes = 50
+    b = 10
     scores = (torch.rand(b, num_classes)).to(DEVICE)
     labels = torch.randint(low=0, high=num_classes, size=(b,), dtype=torch.long
                            ).to(DEVICE)
 
     # test reencoding.
     code = loss.re_encode_label(scores, labels)
+    outfd = "debug"
+    if not os.path.exists(outfd):
+        os.makedirs(outfd)
+    prob_code = F.softmax(code, dim=1)
+    for i in range(code.shape[0]):
+        fig = plt.figure()
+        plt.plot(prob_code[i, :].cpu().numpy())
+        fig.savefig(os.path.join(outfd, "{}-label-{}.png".format(i, labels[i])))
+        plt.close(fig)
     print("Label:", labels)
     print("***** Code")
     print(code)
@@ -1517,7 +1564,7 @@ if __name__ == "__main__":
 
     # test_LossREN()
 
-    # test_LossLD()
+    test_LossLD()
 
     # test_LossMV()
 
@@ -1525,5 +1572,5 @@ if __name__ == "__main__":
 
     # test_public_losses()
 
-    test_Metrics()
+    # test_Metrics()
 

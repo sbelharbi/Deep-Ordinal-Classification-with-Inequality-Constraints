@@ -119,7 +119,8 @@ config = {
     "var": 1.,  # LossLD
     "lam1": 0.2,  # LossMV
     "lam2": 0.05,  # LossMV
-    "tau": 1.  # LossPO
+    "tau": 1.,  # LossPO
+    "weight_ce": False  # ELB, RLB. if true, the CE loss is weighted by t.
 }
 
 # ==============================================================================

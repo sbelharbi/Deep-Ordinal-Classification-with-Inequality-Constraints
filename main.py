@@ -95,8 +95,12 @@ if __name__ == "__main__":
     # Write in scratch instead of /project
     if "CC_CLUSTER" in os.environ.keys():
         FOLDER = '{}'.format(os.environ["SCRATCH"])
-        OUTD = join(FOLDER, "{}-{}-{}-exps-unimodal-const".format(
-            args.loss, args.dataset, args.max_epochs), get_exp_name(args))
+        OUTD = join(
+            FOLDER, "fixed-weighted-{}-{}-{}-{}-{}-exps-unimodal-const-"
+                    "new-selection-criteria-mxepochs-{}".format(
+                        args.weight_ce, args.loss, args.dataset,
+                        args.max_epochs, args.mulcoef, args.max_epochs),
+            get_exp_name(args))
     else:
         # we need to write in home...
         # parent_folder = dirname(abspath(__file__)).split(os.sep)[-1]
@@ -147,8 +151,7 @@ if __name__ == "__main__":
     transform_tensor = get_transforms_tensor(args)
 
     # ==========================================================================
-    # Datasets: create folds, load csv, preprocess files and save on disc.
-    # load datasets: train, valid, test.
+    # Datasets: load csv, datasets: train, valid, test.
     # ==========================================================================
 
     announce_msg("SPLIT: {} \t FOLD: {}".format(args.split, args.fold))
@@ -304,6 +307,11 @@ if __name__ == "__main__":
     best_epoch = 0
 
     # TODO: validate before start training.
+    # reset_seed(int(os.environ["MYSEED"]))
+    # vl_stats = validate(
+    #     model, valid_loader, CRITERION, DEVICE, vl_stats, -1,
+    #     training_log)
+    # reset_seed(int(os.environ["MYSEED"]))
 
     announce_msg("start training")
     set_default_seed()
@@ -338,6 +346,15 @@ if __name__ == "__main__":
         # validation metrics: acc, mae, soi_y, soi_py, loss
         acc, mae, soi_y, soi_py, vl_loss = vl_stats[-1, :]
         metric_val = vl_loss
+
+        if args.loss in ["LossPN", "LossELB", "LossRLB"]:
+            # in our case, we should not use the loss as a selection criterion
+            # since it combines two terms.
+            if args.dataset in ["bach-part-a-2018",
+                                "historical-color-image-decade"]:
+                metric_val = 1. - acc
+            else:
+                metric_val = mae
 
         # TODO: Revise the model selection: acc.
         if (best_val_metric is None) or (metric_val <= best_val_metric):

@@ -10,6 +10,8 @@ fold: 0
 fold_folder: ./folds
 height_tag: 50
 init_t: 1.0
+lam1: 0.2
+lam2: 0.05
 lamb: 1.0e-05
 loss: LossCE
 max_epochs: 400
@@ -35,4 +37,8 @@ preload: true
 ratio_scale_patch: 1.0
 resize: null
 split: 0
+tau: 1.0
+thrs: 0.5
 up_scale_small_dim_to: null
+var: 1.0
+weight_ce: false

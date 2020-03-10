@@ -1,3 +1,6 @@
+-f /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/avx512
+-f /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/avx2
+-f /cvmfs/soft.computecanada.ca/custom/python/wheelhouse/generic
 attrs==19.1.0
 backcall==0.1.0
 bleach==2.1.3

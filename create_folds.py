@@ -456,9 +456,9 @@ def split_fgnet(args):
     ages = []
     for s in samples:
         id, age = basename(s).split('.')[0].split("A")
-        if len(age) > 2:
-            print(age, age[:-2])
-            age = age[:-2]
+        if len(age) > 2:  # 001A43a, 001A43b
+            print("Special case: ", age, age[:-1], file=log)
+            age = age[:-1]
         if id in subjects.keys():
             subjects[id].append((s, int(age)))
         else:
@@ -1775,14 +1775,14 @@ def do_glas():
     # ===========================
 
     username = getpass.getuser()
-    if username == "brian":
+    if username == "XXXXX":
         baseurl = "{}/datasets/GlaS-2015/Warwick QU Dataset (Released " \
                   "2016_07_08)".format(os.environ["EXDRIVE"])
-    elif username == "sbelharb":
+    elif username == "XXXXX":
         baseurl = "{}/datasets/GlaS-2015/Warwick QU Dataset (Released " \
                   "2016_07_08)".format(os.environ["SCRATCH"])
     else:
-        raise ValueError("username `{}` unknown .... [NOT OK]".format(username))
+        raise ValueError("username `{}` unknown (anonymous zone).... [NOT OK]".format(username))
 
     args = {"baseurl": baseurl,
             "folding": {"vl": 20},  # 80 % for train, 20% for validation.
@@ -1812,15 +1812,15 @@ def do_Caltech_UCSD_Birds_200_2011():
     # ===========================
 
     username = getpass.getuser()
-    if username == "brian":
+    if username == "XXXX":
         baseurl = "{}/datasets/Caltech-UCSD-Birds-200-2011".format(
             os.environ["EXDRIVE"]
         )
-    elif username == "sbelharb":
+    elif username == "XXXXXXX":
         baseurl = "{}/datasets/Caltech-UCSD-Birds-200-2011".format(
             os.environ["SCRATCH"])
     else:
-        raise ValueError("username `{}` unknown .... [NOT OK]".format(username))
+        raise ValueError("username `{}` unknown (anonymous zone).... [NOT OK]".format(username))
 
     args = {"baseurl": baseurl,
             "folding": {"vl": 20},  # 80 % for train, 20% for validation.
@@ -1855,12 +1855,12 @@ def do_Oxford_flowers_102():
     # ===========================
 
     username = getpass.getuser()
-    if username == "brian":
+    if username == "XXXX":
         baseurl = "{}/datasets/Oxford-flowers-102".format(os.environ["EXDRIVE"])
-    elif username == "sbelharb":
+    elif username == "XXXXX":
         baseurl = "{}/datasets/Oxford-flowers-102".format(os.environ["SCRATCH"])
     else:
-        raise ValueError("username `{}` unknown .... [NOT OK]".format(username))
+        raise ValueError("username `{}` unknown (anonymous zone).... [NOT OK]".format(username))
 
     args = {"baseurl": baseurl,
             "dataset": "Oxford-flowers-102",
@@ -1913,12 +1913,12 @@ if __name__ == "__main__":
     # do_historical_color_image_decade()
 
     # ============== CREATE FOLDS OF AFAD-Full DATASET
-    do_afad_full()
+    # do_afad_full()
 
     # ============== CREATE FOLDS OF AFAD-Lite DATASET
-    do_afad_lite()
+    # do_afad_lite()
     # ============== CREATE FOLDS OF FGNET DATASET
-    # do_fgnet()
+    do_fgnet()
     # ============== CREATE FOLDS OF BACH (PART A) 2018 DATASET
     # do_bach_parta_2018()
 

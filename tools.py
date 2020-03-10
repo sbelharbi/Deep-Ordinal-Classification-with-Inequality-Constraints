@@ -38,6 +38,9 @@ from scipy import interp
 from matplotlib import font_manager as fm, rcParams
 
 
+from deeplearning import criteria
+
+
 class Dict2Obj(object):
     """
     Convert a dictionary into a class where its attributes are the keys of the dictionary, and
@@ -172,15 +175,18 @@ class VisualiseOverlDist(object):
         else:
             return "Unknown"
 
-    def __call__(self, tracker, name_classes, outdir, loss_name):
+    def __call__(self, tracker, name_classes, outdir, loss_name,
+                 show_title=True, set_font_sz=None, shift=0):
         """
         Draw overlapped distributions.
         :param tracker: numpy.ndarray 2D matrix of the tracked values:
         acc, mae, soi_y, soi_py, loss, posterior
         :param name_classes: dict, name of the classes: name: int.
-        :param outdir: str, path to the output folder. Inside it, we create a
-        folder named `all_classes` that will contain the overlapped dists.
-        :param loss_name: str, name of the loss.
+        :param outdir: str, path to the output folder.
+        :param loss_inst: instance of a loss deeplearning.criteria
+        :param show_title: bool. If true, we show the title.
+        :param set_font_sz: int, force the font size to the specified value.
+        :param shift: int. how much to shift the y, h_hat.
         :return:
         """
         msg = "`tracker` must be of type numpy.ndarray. found {} .... " \
@@ -192,16 +198,27 @@ class VisualiseOverlDist(object):
         if not os.path.exists(outdir):
             os.makedirs(outdir)
 
+        loss = criteria.__dict__[loss_name]()
         posterior = tracker[:, 5:]
         nbr_sam, nbr_cl = posterior.shape
 
-        pred_lab = posterior.argmax(axis=1)
-        out_dir_all = join(outdir, "all_classes")
+        pred_lab = loss.predict_label(
+            torch.from_numpy(posterior.reshape((-1, nbr_cl))))
+
+        # print(pred_lab)
+        out_dir_all = outdir  # join(outdir, "all_classes")
         if not os.path.exists(out_dir_all):
             os.makedirs(out_dir_all)
 
         print("Overlapping distributions...")
         font_sz = 7
+        if set_font_sz is not None:
+            msg = "'set_font_zs' must be an integer. Found {}".format(
+                type(set_font_sz))
+            assert isinstance(set_font_sz, int), msg
+            msg = "'set_font_zs' must be positive. Found {}".format(set_font_sz)
+            assert set_font_sz > 0, msg
+            font_sz = set_font_sz
         min_alpha = 0.05
         curve_alpha, curve_width = 0.05, 0.5
         for i in tqdm.tqdm(range(nbr_cl), ncols=80, total=nbr_cl):
@@ -231,23 +248,33 @@ class VisualiseOverlDist(object):
                 # Histogram.
                 ax = fig.add_subplot(111)
                 mx = 0.
-                tcks = np.arange(posterior.shape[1])
                 for j in ind_i:
                     prob = posterior[j, :]
+                    # correct prob
+                    if shift != 0:
+                        prob = np.concatenate((np.zeros(shift), prob))
+
+                    tcks = np.arange(prob.size)
                     # ax.bar(x=np.arange(prob.size), height=prob,
                     #        align="center",  width=0.98, alpha=alpha,
                     #        color="blue")
                     # ax.plot(prob, color="orange", alpha=0.2)
+
                     ax.fill_between(tcks, 0., prob,
                                     facecolor='blue', alpha=alpha)
-                    ax.plot(prob, color="orange", alpha=curve_alpha,
-                            linewidth=curve_width)
+                    # remove the orange part.
+                    # ax.plot(prob, color="orange", alpha=curve_alpha,
+                    #         linewidth=curve_width)
+
                     # ax = self.convert_post_prob_into_bars(
                     #     ax, posterior[j, :], alpha)
                     mx = max(mx, posterior[j, :].max())
 
                 ax.set_xlabel("y", fontsize=font_sz)
-                ax.set_ylabel("p(y|x)", fontsize=font_sz)
+                # mlp.rc('text', usetex=True)
+                # mlp.rcParams['text.latex.preamble'] = [r"\usepackage{
+                # amsmath}"]
+                ax.set_ylabel(r"$\hat{p}(y|X)$", fontsize=font_sz)
                 ax.spines['top'].set_visible(False)
                 ax.spines['right'].set_visible(False)
 
@@ -256,18 +283,22 @@ class VisualiseOverlDist(object):
                 for tick in ax.yaxis.get_major_ticks():
                     tick.label.set_fontsize(font_sz)
                 ax.vlines(
-                    x=i, color='red', linestyle="-.", ymin=0., ymax=mx * 1.01)
-                ax.text(x=i, y=mx * 1.03, s=r"$\hat{y}$")
-                title = "Overlapped posterior distributions with the " \
-                        "prediction `{}`. \n {} \n MAE: {:.2f}+-{:.2f}, " \
-                        "{}: {:.2f}+-{:.2f}%.".format(
-                         class_str, loss_name,
-                         mae_avg,
-                         mae_std,
-                         r"SOI$_\hat{y}$",
-                         soi_py_avg * 100.,
-                         soi_py_std * 100.)
-                fig.suptitle(title, fontsize=8)
+                    x=i + shift, color='red', linestyle="-.", ymin=0., ymax=mx *
+                    1.01)
+                ax.text(x=i + shift, y=mx * 1.03, s=r"$\hat{y}$",
+                        fontsize=font_sz)
+                if show_title:
+                    title = "Overlapped posterior distributions with the " \
+                            "prediction `{}`. \n {} \n MAE: {:.2f}+-{:.2f}, " \
+                            "{}: {:.2f}+-{:.2f}%.".format(
+                             class_str, loss.literal,
+                             mae_avg,
+                             mae_std,
+                             r"SOI$_\hat{y}$",
+                             soi_py_avg * 100.,
+                             soi_py_std * 100.)
+                    fig.suptitle(title, fontsize=8)
+                plt.tight_layout()
                 fig.savefig(
                     join(out_dir_all, "{}.jpg".format(class_str)), format="jpg")
                 plt.close(fig)
@@ -298,6 +329,9 @@ class VisualisePP(object):
         self.dx = 10
         # (pixels) how much space to leave between images.
         self.space = 10
+
+        # shift y, y_hat
+        self.shift = 0
 
         # visual
         msg = "`visual` must be in ['surface', 'bars']. You provided {}" \
@@ -468,7 +502,7 @@ class VisualisePP(object):
         else:
             return "Unknown"
 
-    def convert_post_prob_into_bars(self, stats, label, loss_name):
+    def convert_post_prob_into_bars(self, stats, label, pred_label, loss_name):
         """
         Compute:
         :param stats: numpy.ndarray vector contains metrics, loss,
@@ -507,9 +541,9 @@ class VisualisePP(object):
         plt.ylabel("p(y|x)", fontsize=font_sz)
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
-        plt.vlines(x=postprob.argmax(), color='red', linestyle="-.",
+        plt.vlines(x=pred_label, color='red', linestyle="-.",
                    ymin=0., ymax=postprob.max() * 1.01)
-        ax.text(x=postprob.argmax(), y=postprob.max() * 1.03, s=r"$\hat{y}$")
+        ax.text(x=pred_label, y=postprob.max() * 1.03, s=r"$\hat{y}$")
         plt.vlines(x=label, color='green', linestyle=":", ymin=0.,
                    ymax=postprob.max() * 1.01)
         ax.text(x=label, y=postprob.max() * 1.03, s='y', color='black')
@@ -535,7 +569,8 @@ class VisualisePP(object):
 
         return img
 
-    def convert_post_prob_into_surface(self, stats, label, loss_name):
+    def convert_post_prob_into_surface(self, stats, label, pred_label,
+                                       loss_name):
         """
         Compute:
         :param stats: numpy.ndarray vector contains metrics, loss,
@@ -548,6 +583,10 @@ class VisualisePP(object):
         font_sz = 7
         lw = 2
         postprob = stats[5:]
+        # expansion.
+        if self.shift != 0:
+            postprob = np.concatenate((np.zeros(self.shift), postprob))
+
         acc, mae, soi_y, soi_py, loss = stats[:5]
         acc *= 100.
         soi_y *= 100.
@@ -568,15 +607,19 @@ class VisualisePP(object):
         surface_alpha = 0.2
         plt.fill_between(np.arange(postprob.size), 0., postprob,
                          facecolor="blue", alpha=surface_alpha)
-        plt.plot(postprob, color="orange", alpha=curve_alpha,
-                 linewidth=curve_width)
+
+        # plt.plot(postprob, color="orange", alpha=curve_alpha,
+        #          linewidth=curve_width)
+        # plt.plot(postprob, color="blue", alpha=surface_alpha,
+        #          linewidth=curve_width)
+
         plt.xlabel("y", fontsize=font_sz)
         plt.ylabel("p(y|x)", fontsize=font_sz)
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
-        plt.vlines(x=postprob.argmax(), color='red', linestyle="-.",
+        plt.vlines(x=pred_label, color='red', linestyle="-.",
                    ymin=0., ymax=postprob.max() * 1.01)
-        ax.text(x=postprob.argmax(), y=postprob.max() * 1.03, s=r"$\hat{y}$")
+        ax.text(x=pred_label, y=postprob.max() * 1.03, s=r"$\hat{y}$")
         plt.vlines(x=label, color='green', linestyle=":", ymin=0.,
                    ymax=postprob.max() * 1.01)
         ax.text(x=label, y=postprob.max() * 1.03, s='y', color='black')
@@ -602,19 +645,26 @@ class VisualisePP(object):
 
         return img
 
-    def draw_distribution(self, stats, label, loss_name):
+    def draw_distribution(self, stats, label, loss_inst):
         """
         Draw the posterior distribution.
         :param stats: numpy.ndarray vector contains metrics, loss,
         and posterior probabilities.
-        :param label: int, true label.
-        :param loss_name: str, name of the loss.
+        :param label: int, true label. (corrected)
+        :param loss_inst: instance of a loss. deeplearning.criteria
         :return: PIL.Image.Image uint8 RGB image.
         """
+        pred_label = loss_inst.predict_label(
+            torch.from_numpy(stats[5:].reshape((1, -1))))[0]
+        pred_label += self.shift  # correct the predicted label (just for the
+        # plotting)
+        loss_name = loss_inst.literal
         if self.visual == "surface":
-            return self.convert_post_prob_into_surface(stats, label, loss_name)
+            return self.convert_post_prob_into_surface(
+                stats, label, pred_label, loss_name)
         elif self.visual == "bars":
-            return self.convert_post_prob_into_bars(stats, label, loss_name)
+            return self.convert_post_prob_into_bars(
+                stats, label, pred_label, loss_name)
         else:
             msg = "Nor really sure how you escaped our assertion, but you " \
                   "did it. Somehow you set `self.visual` to something we do" \
@@ -624,7 +674,7 @@ class VisualisePP(object):
             raise ValueError(msg)
 
     def __call__(self, input_img, stats, label, name_classes,
-                 loss_name, name_file=""):
+                 loss_name, name_file="", shift=0):
         """
         Visualise the image and the posterior probabilities.
 
@@ -634,17 +684,24 @@ class VisualisePP(object):
         it contains 4 metrics, loss, and posterior probabilities.
         :param label: int. the input label.
         :param name_classes: dict, {"class_name": int}.
-        :param loss_name: list of str, name of the losses.
+        :param loss_name: list of str, name of the losses (name of the class).
         :param name_file: str. name of the input image file.
+        :param shift: int, how much to shift the labels and the prediction.
+        usefull only when != 0.
         :return: PIL.Image.Image RGB uint8 image.
         """
         # pred_label = int(stats[5:].argmax())
+        self.shift = shift
         size = 15
+        losses = [criteria.__dict__[l]() for l in loss_name]
 
         histograms = []
         for i, s in enumerate(stats):
+            # dist = stats[i]
+            # if shift != 0:
+            #     dist = np.concatenate((np.zeros(shift), dist))
             histograms.append(
-                self.draw_distribution(stats[i], label, loss_name[i]))
+                self.draw_distribution(stats[i], label + shift, losses[i]))
 
         # histograms are expected to have the same size.
         w_his, h_his = histograms[0].size
@@ -669,7 +726,8 @@ class VisualisePP(object):
 
         input_tag = self.create_tag_input(
             wim + self.space + int(w_his / 4.),
-            self.get_class_name(name_classes, label), label, name_file, size
+            self.get_class_name(name_classes, label), label + shift, name_file,
+            size
         )
         img_out.paste(input_img, (0, h_his - him), None)
         delta = wim + self.space
@@ -677,7 +735,7 @@ class VisualisePP(object):
             img_out.paste(histograms[i], (delta, 0), None)
             # create the tag of the histo (name of the loss)
             tag_loss = self.create_tag_loss(
-                histograms[i].size[0], loss_name[i],  size)
+                histograms[i].size[0], losses[i].literal,  size)
             # this has to be done before pasting the tag of the input.
             # sometimes the name of the file is too long so it exceeds the
             # size of the input image. that's why we set its width to
@@ -1422,7 +1480,7 @@ def get_exp_name(args):
     time.sleep(np.random.randint(1, 5))
     time_exp = dt.datetime.now().strftime('%m_%d_%Y_%H_%M_%S_%f')
     name = "PID-{}-dataset-{}-LOSS-{}-b-sz-{}-model-{}-split-{}-" \
-           "fold-{}-mx-epohc-{}-time-{}".format(
+           "fold-{}-mx-epoch-{}-time-{}".format(
             os.getpid(), args.dataset, args.loss, args.batch_size,
             args.model["name"], args.split, args.fold, args.max_epochs,
             time_exp)
@@ -1447,12 +1505,8 @@ def get_device(args):
     Return:
         torch.device() object.
     """
-    username = getpass.getuser()
-    if username == "sbelharbi":  # LIVIA
-        device = torch.device(
-            "cuda:" + args.cudaid if torch.cuda.is_available() else "cpu")
-    else:
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    device = torch.device("cuda:" + args.cudaid if torch.cuda.is_available() else "cpu")
 
     if torch.cuda.is_available():
         torch.cuda.set_device(int(args.cudaid))
@@ -1877,6 +1931,29 @@ def final_processing(model, dataloader, dataset, dataset_name, test_fn, criterio
             yaml.dump(args, fx)
 
 
+def str2bool(v):
+    """
+    Read `v`: and returns a boolean value:
+    True: if `v== "True"`
+    False: if `v=="False"`
+    :param v: str.
+    :return: bool.
+    """
+    if isinstance(v, bool):
+        return v
+    if isinstance(v, str):
+        if v == "True":
+            return True
+        elif v == "False":
+            return False
+        else:
+            raise ValueError(
+                "Expected value: 'True'/'False'. found {}.".format(v))
+    else:
+        raise argparse.ArgumentTypeError('String boolean value expected: '
+                                         '"True"/"Flse"')
+
+
 def get_yaml_args(input_args):
     """
     Gets the yaml arguments.
@@ -1918,7 +1995,7 @@ def get_yaml_args(input_args):
                  "model. Use --strict to specify if the  pre-trained "
                  "model needs to match exactly the current model or not.")
         parser.add_argument(
-            "--strict", type=bool, default=None,
+            "--strict", type=str2bool, default=None,
             help="If True, the pre-trained model needs to match exactly the "
                  "current model. Default: True.")
         # Allow the user to override some values in the yaml.
@@ -1967,7 +2044,7 @@ def get_yaml_args(input_args):
             "--modalities", type=int, default=None,
             help="Number of modalities (classifier, wildcat)")
         parser.add_argument(
-            "--pretrained", type=bool, default=None,
+            "--pretrained", type=str2bool, default=None,
             help="True/False (classifier, wildcat)")
         parser.add_argument(
             "--modelname", type=str, default=None,
@@ -2008,6 +2085,10 @@ def get_yaml_args(input_args):
         parser.add_argument(
             "--tau", type=float, default=None,
             help="tau  for `LossPO`")
+
+        parser.add_argument(
+            "--weight_ce", type=str2bool, default=None,
+            help="If true, the CE loss of `ELB`/`RLB` are weighted by t.")
 
         # # TODO: finish this overriding!
         input_parser = parser.parse_args()
@@ -2156,6 +2237,10 @@ def get_yaml_args(input_args):
         if input_parser.tau is not None:
             warnit("tau", args["tau"], input_parser.tau)
             args["tau"] = input_parser.tau
+
+        if input_parser.weight_ce is not None:
+            warnit("weight_ce", args["weight_ce"], input_parser.weight_ce)
+            args["weight_ce"] = input_parser.weight_ce
 
         args_dict = copy.deepcopy(args)
         args = Dict2Obj(args)
@@ -3392,14 +3477,9 @@ def check_if_allow_multgpu_mode():
     1. Computation will be dispatched over the AVAILABLE GPUs.
     2. Synch-BN is activated.
     """
-    # TODO: anonymize.
-    if "CC_CLUSTER" in os.environ.keys():
-        ALLOW_MULTIGPUS = os.environ["CC_CLUSTER"] in [
-            "beluga", "cedar", "graham"]  # CC.
-    else:
-        ALLOW_MULTIGPUS = False  # LIVIA
+    # anonymized zone.
 
-    # ALLOW_MULTIGPUS = True
+    ALLOW_MULTIGPUS = False  # Set this as you want.
     os.environ["ALLOW_MULTIGPUS"] = str(ALLOW_MULTIGPUS)
     NBRGPUS = torch.cuda.device_count()
     ALLOW_MULTIGPUS = ALLOW_MULTIGPUS and (NBRGPUS > 1)
@@ -3440,7 +3520,7 @@ def test_VisualiseOverlDist():
     stuff = np.random.rand(1000, 5)
     pp = softmax(rnd)
     vis = VisualiseOverlDist()
-    vis(np.hstack((stuff, pp)), name_classes, OUTD, "Loss name")
+    vis(np.hstack((stuff, pp)), name_classes, OUTD, "LossELB")
 
 
 def test_VisualisePP():
@@ -3459,8 +3539,10 @@ def test_VisualisePP():
 
     pp = np.random.rand(100,)
     pp[10] = 1.5
-    visualisor.convert_post_prob_into_bars(softmax(pp), 40, "Loss name").save(
-        join(OUTD, "bars-pp.jpeg"), "JPEG")
+    loss = criteria.__dict__["LossCE"]()
+    visualisor.draw_distribution(
+        softmax(pp), 40, loss).save(
+        join(OUTD, "surf-pp.jpeg"), "JPEG")
 
     nbr_classes = 70
     label = int(nbr_classes/5.)
@@ -3478,7 +3560,7 @@ def test_VisualisePP():
     lstats = []
     llosses = []
     loss = "LOSS NAME Too large and large"
-    loss = "LOSS NAME"
+    loss = "LossPN"
     for ii in range(nbr_his):
         lstats.append(stats)
         llosses.append(loss)
@@ -3724,8 +3806,8 @@ if __name__ == "__main__":
 
     # test_plot_stats()
 
-    test_VisualisePP()
+    # test_VisualisePP()
 
-    # test_VisualiseOverlDist()
+    test_VisualiseOverlDist()
 
 

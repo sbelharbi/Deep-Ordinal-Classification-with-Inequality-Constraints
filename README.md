@@ -1,13 +1,13 @@
 **Please report any issue through the issue tool of Github and not through email.**
 
-### Pytorch code for: `Deep Ordinal Classification with Inequality Constraints`
+### Pytorch code for: `Non-parametric Uni-modality Constraints for Deep Ordinal Classification`
 
 * **arXiv**: [https://arxiv.org/abs/1911.10720](https://arxiv.org/abs/1911.10720)
 
 * **If you use this code, please cite our work**:
 ```
 @article{belharbi2019unimoconstraints,
-  title={Deep Ordinal Classification with Inequality Constraints},
+  title={Non-parametric Uni-modality Constraints for Deep Ordinal Classification},
   author={Belharbi, S. and Ben Ayed, I. and McCaffrey, L. and Granger, E.},
   journal={coRR},
   volume={abs/1911.10720},
@@ -34,7 +34,7 @@
 
 
 ## Download datasets:
-See [./cmds](./cmds) on how to download the datasets. You find the splits in [./folds](./folds). Untar first.
+See [./cmds](./cmds) on how to download the datasets. You find the splits in [./folds](./folds). Unzip first (folds.zip).
 The code that generated the splits is [./create_folds.py](./create_folds.py).
 
 

@@ -15,6 +15,7 @@ import pickle as pkl
 
 from tools import log, VisualisePP, VisualiseOverlDist
 from deeplearning.criteria import Metrics
+import constants
 from reproducibility import reset_seed
 
 
@@ -262,8 +263,9 @@ def final_validate(model, dataloader, criterion, device, dataset, outd,
                 stats=[tracker[i, :]],
                 label=dataset.get_original_input_label_int(i),
                 name_classes=dataset.name_classes,
-                loss_name=[criterion.literal],
-                name_file=basef
+                loss_name=[criterion.__class__.__name__],
+                name_file=basef,
+                shift=constants.ds_y_shift[dataset.dataset_name]
             )
             fdout = FOLDER if FOLDER else outd_data
             img_out.save(

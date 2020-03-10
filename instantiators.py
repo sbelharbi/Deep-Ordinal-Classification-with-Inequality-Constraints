@@ -35,11 +35,12 @@ def instantiate_loss(args):
         return criteria.__dict__[args.loss](lamb=args.lamb, eps=args.eps)
     if loss_str == "LossELB":
         return criteria.__dict__[args.loss](
-            init_t=args.init_t, max_t=args.max_t, mulcoef=args.mulcoef)
+            init_t=args.init_t, max_t=args.max_t, mulcoef=args.mulcoef,
+            weight_ce=args.weight_ce)
     if loss_str == "LossRLB":
         return criteria.__dict__[args.loss](
             init_t=args.init_t, max_t=args.max_t, mulcoef=args.mulcoef,
-            epsp=args.epsp)
+            epsp=args.epsp, weight_ce=args.weight_ce)
     if loss_str == "LossREN":
         return criteria.__dict__[args.loss](thrs=args.thrs)
     if loss_str == "LossLD":

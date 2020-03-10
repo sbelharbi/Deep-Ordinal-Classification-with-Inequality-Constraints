@@ -511,6 +511,10 @@ def test_all_resnet():
     import numpy as np
     from scipy.special import softmax
 
+    from deeplearning.criteria import Metrics, LossPO
+
+    metrics = Metrics()
+    tr_loss = LossPO()
     num_classes = 20
     batch = 1
     poisson = True
@@ -538,26 +542,38 @@ def test_all_resnet():
         print("DEVICE AFTER: ", torch.cuda.current_device())
         # DEVICE = torch.device("cpu")
         model.to(DEVICE)
+        metrics.to(DEVICE)
         x = torch.randn(batch, 3, 480, 480)
+        labels = torch.randint(low=0, high=num_classes, size=(batch,),
+                               dtype=torch.long
+                               ).to(DEVICE)
         x = x.to(DEVICE)
         tx = dt.datetime.now()
         scores, maps = model(x)
         print("Forward time took: {}".format(dt.datetime.now() - tx))
         print(x.size(), scores.size(), maps.size())
         print(scores)
+        print(labels)
+        mtr = metrics(scores, labels, tr_loss, avg=False).view(batch, -1)
+        print("predlabel", tr_loss.predict_label(scores))
+        print(mtr)
         path = os.path.join("../data/debug/net", model.namenet)
         if not os.path.exists(path):
             os.makedirs(path)
         xint = range(0, num_classes)
         for kk in range(batch):
             fig = plt.figure()
-            prob = softmax(scores[kk, :].cpu().detach().numpy())
+            ss = scores[kk, :].cpu().detach().numpy()
+            print("scores", ss)
+            prob = softmax(ss)
+            print("probs", prob)
             title = "{} Network scores".format(model.namenet)
             if poisson:
                 title = "Hard-wired Poisson distribution in the  output of " \
                         "a randomly initialized {} \n" \
-                        "Number of classes: {}".format(
-                         model.namenet, num_classes)
+                        "Number of classes: {}, {}: {:.2f}%".format(
+                         model.namenet, num_classes, r"SOI$_{\hat{y}}$",
+                         mtr[kk, -1] * 100.)
 
             plt.bar(x=np.arange(num_classes),
                     height=prob,
